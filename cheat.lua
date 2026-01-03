@@ -170,7 +170,9 @@ task.spawn(function()
 		end
 
 		-- AUTO DEPOSIT (quando colects == 5)
-		if Functions.AutoDeposit and colects >= 5 then
+		if Functions.AutoDeposit and colects >= 50 then
+			local hrp = char:WaitForChild("HumanoidRootPart")
+			local initial_player_position = hrp.Position
 			colects = 0
 			local deposit = workspace:FindFirstChild("DepositButton", true)
 			if deposit then
@@ -180,10 +182,12 @@ task.spawn(function()
 					pcall(function() hrp.CFrame = CFrame.new(deposit_path) end)
 				end
 			end
+			task.wait(0.05)
+			hrp.CFrame = CFrame.new(initial_player_position)
 		end
 
 		-- AUTO BUY (tempo baseado no contador)
-		if Functions.AutoBuy and time_to_buy >= 10 then
+		if Functions.AutoBuy and time_to_buy >= 100 then
 			time_to_buy = 0
 			local hrp = char:WaitForChild("HumanoidRootPart")
 			local initial_player_position = hrp.Position
@@ -191,7 +195,7 @@ task.spawn(function()
 			if buy_button then
 				local buy_button_glow = buy_button:FindFirstChild("Glow", true)
 				if buy_button_glow and buy_button_glow:IsA("BasePart") then
-					local buy_button_path = buy_button_glow.Position + Vector3.new(0, 5, 0)
+					local buy_button_path = buy_button_glow.Position + Vector3.new(0, 0, 0)
 					pcall(function()
 						hrp.CFrame = CFrame.new(buy_button_path)
 					end)
@@ -202,17 +206,20 @@ task.spawn(function()
 		end
 
 		-- AUTO UPGRADE
-		if Functions.AutoUpgrade and time_to_upgrade >= 50 then
+		if Functions.AutoUpgrade and time_to_upgrade >= 150 then
+			local hrp = char:WaitForChild("HumanoidRootPart")
+			local initial_player_position = hrp.Position
 			time_to_upgrade = 0
 			local upgrade_button = workspace:FindFirstChild("BuySpeed", true)
 			if upgrade_button then
 				local upgrade_button_base = upgrade_button:FindFirstChild("Base", true)
 				if upgrade_button_base and upgrade_button_base:IsA("BasePart") then
-					local upgrade_button_path = upgrade_button_base.Position + Vector3.new(0, 2, 0)
+					local upgrade_button_path = upgrade_button_base.Position + Vector3.new(0, 0, 0)
 					pcall(function() hrp.CFrame = CFrame.new(upgrade_button_path) end)
-					task.wait(0.6)
+					task.wait(0.2)
 				end
 			end
+			hrp.CFrame = CFrame.new(initial_player_position)
 		end
 
 		-- TESTE FUNCTION (exemplo de uso)

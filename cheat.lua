@@ -186,17 +186,19 @@ task.spawn(function()
 		if Functions.AutoBuy and time_to_buy >= 10 then
 			time_to_buy = 0
 			local hrp = char:WaitForChild("HumanoidRootPart")
-			local initial_player_position = hrp.CFrame
+			local initial_player_position = hrp.CFrame  -- salva CFrame completo (posição + rotação)
 			local buy_button = workspace:FindFirstChild("BuyDropper5", true)
 			if buy_button then
 				local buy_button_glow = buy_button:FindFirstChild("Glow", true)
 				if buy_button_glow and buy_button_glow:IsA("BasePart") then
-					local buy_button_path = buy_button_glow.Position + Vector3.new(0, 5, 0)
+					local target_pos = buy_button_glow.Position + Vector3.new(0, 5, 0)
 					pcall(function()
-						hrp.CFrame = CFrame.new(buy_button_path)
+						hrp.CFrame = CFrame.new(target_pos)
 					end)
 					task.wait(0.6)
-					hrp.CFrame = CFrame.new(initial_player_position)
+					pcall(function()
+						hrp.CFrame = initial_player_position
+					end)
 				end
 			end
 		end

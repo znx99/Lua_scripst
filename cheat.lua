@@ -26,8 +26,11 @@ local Functions = {
 	TesteFunction = false,
     AutoBuy = false,
     AutoUpgrade = false,
-	BringBanana = false
+	BringBanana = false,
+	FollowPlayer = false
 }
+
+local FollowTargetName = "" -- nick a ser seguido
 
 -- Ordem fixa dos botões (para layout consistente)
 local functionOrder = {
@@ -36,7 +39,8 @@ local functionOrder = {
 	"TesteFunction",
 	"AutoBuy",
 	"AutoUpgrade",
-	"BringBanana"
+	"BringBanana",
+	"FollowPlayer"
 }
 
 --------------------------------------------------
@@ -48,7 +52,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(420, 300)
+frame.Size = UDim2.fromOffset(420, 360) -- aumentei a altura para caber o input
 frame.Position = UDim2.fromScale(0.35, 0.3)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
@@ -66,6 +70,30 @@ title.TextSize = 16
 title.Parent = frame
 
 --------------------------------------------------
+-- INPUT NICK (para FollowPlayer)
+--------------------------------------------------
+local nameBox = Instance.new("TextBox")
+nameBox.Size = UDim2.new(0.9, 0, 0, 28)
+nameBox.Position = UDim2.new(0.05, 0, 0, 35)
+nameBox.PlaceholderText = "Nick do player para seguir"
+nameBox.Text = ""
+nameBox.ClearTextOnFocus = false
+nameBox.Font = Enum.Font.Gotham
+nameBox.TextSize = 12
+nameBox.TextColor3 = Color3.new(1,1,1)
+nameBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
+nameBox.Parent = frame
+Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0,6)
+
+nameBox.FocusLost:Connect(function(enterPressed)
+	if nameBox.Text and nameBox.Text ~= "" then
+		FollowTargetName = nameBox.Text
+	else
+		FollowTargetName = ""
+	end
+end)
+
+--------------------------------------------------
 -- BOTÕES (3 COLUNAS)
 --------------------------------------------------
 local columns = 3
@@ -73,7 +101,7 @@ local btnWidth = 0.28 -- escala X
 local btnHeight = 28   -- pixels Y
 local paddingX = 0.05  -- escala X
 local paddingY = 8     -- pixels Y
-local startY = 40      -- offset Y em pixels
+local startY = 75      -- offset Y em pixels (abaixo do input)
 
 for i, name in ipairs(functionOrder) do
 	local index = i - 1
@@ -134,6 +162,25 @@ UIS.InputBegan:Connect(function(input, gp)
 end)
 
 --------------------------------------------------
+-- FUNÇÕES AUXILIARES
+--------------------------------------------------
+local function getPlayerHRPByName(playerName)
+	if not playerName or playerName == "" then return nil end
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr.Name:lower() == playerName:lower() then
+			local c = plr.Character
+			if c then
+				local p = c:FindFirstChild("HumanoidRootPart")
+				if p then
+					return p
+				end
+			end
+		end
+	end
+	return nil
+end
+
+--------------------------------------------------
 -- LOOP PRINCIPAL
 --------------------------------------------------
 local colects = 0
@@ -142,6 +189,10 @@ local time_to_upgrade = 0
 
 task.spawn(function()
 	while true do
+		-- atualiza referência do personagem/HRP a cada ciclo (tratamento de respawn)
+		char = player.Character or player.CharacterAdded:Wait()
+		hrp = char and char:FindFirstChild("HumanoidRootPart")
+
 		if not SCRIPT_ENABLED then
 			task.wait(1)
 			continue
@@ -161,7 +212,7 @@ task.spawn(function()
 		-- AUTO COLLECT (teleporta perto do Drop)
 		if Functions.AutoCollect then
 			local part = workspace:FindFirstChild("Dropper_Drop", true)
-			if part and part:IsA("BasePart") then
+			if part and part:IsA("BasePart") and hrp then
 				-- posiciona um pouco acima para evitar colisão direta
 				pcall(function()
 					hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0))
@@ -169,11 +220,10 @@ task.spawn(function()
 			end
 		end
 
-		-- AUTO DEPOSIT (quando colects == 5)
-		if Functions.AutoDeposit and colects >= 1500 then
-			local hrp = char:WaitForChild("HumanoidRootPart")
-			local initial_player_position = hrp.Position
+		-- AUTO DEPOSIT (quando colects >= 200)
+		if Functions.AutoDeposit and colects >= 200 and hrp then
 			colects = 0
+			local initial_player_cframe = hrp.CFrame
 			local deposit = workspace:FindFirstChild("DepositButton", true)
 			if deposit then
 				local deposit_glow = deposit:FindFirstChild("Glow", true)
@@ -183,43 +233,41 @@ task.spawn(function()
 				end
 			end
 			task.wait(0.05)
-			hrp.CFrame = CFrame.new(initial_player_position)
+			pcall(function() if hrp and hrp.Parent then hrp.CFrame = initial_player_cframe end end)
 		end
 
 		-- AUTO BUY (tempo baseado no contador)
-		if Functions.AutoBuy and time_to_buy >= 2000 then
+		if Functions.AutoBuy and time_to_buy >= 200 and hrp then
 			time_to_buy = 0
-			local hrp = char:WaitForChild("HumanoidRootPart")
-			local initial_player_position = hrp.Position
+			local initial_player_cframe = hrp.CFrame
 			local buy_button = workspace:FindFirstChild("BuyDropper5", true)
 			if buy_button then
 				local buy_button_glow = buy_button:FindFirstChild("Glow", true)
 				if buy_button_glow and buy_button_glow:IsA("BasePart") then
-					local buy_button_path = buy_button_glow.Position + Vector3.new(0, 0, 0)
+					local buy_button_path = buy_button_glow.Position
 					pcall(function()
 						hrp.CFrame = CFrame.new(buy_button_path)
 					end)
 					task.wait(0.6)
-					hrp.CFrame = CFrame.new(initial_player_position)
+					pcall(function() if hrp and hrp.Parent then hrp.CFrame = initial_player_cframe end end)
 				end
 			end
 		end
 
 		-- AUTO UPGRADE
-		if Functions.AutoUpgrade and time_to_upgrade >= 150 then
-			local hrp = char:WaitForChild("HumanoidRootPart")
-			local initial_player_position = hrp.Position
+		if Functions.AutoUpgrade and time_to_upgrade >= 150 and hrp then
 			time_to_upgrade = 0
+			local initial_player_cframe = hrp.CFrame
 			local upgrade_button = workspace:FindFirstChild("BuySpeed", true)
 			if upgrade_button then
 				local upgrade_button_base = upgrade_button:FindFirstChild("Base", true)
 				if upgrade_button_base and upgrade_button_base:IsA("BasePart") then
-					local upgrade_button_path = upgrade_button_base.Position + Vector3.new(0, 0, 0)
+					local upgrade_button_path = upgrade_button_base.Position
 					pcall(function() hrp.CFrame = CFrame.new(upgrade_button_path) end)
 					task.wait(0.2)
 				end
 			end
-			hrp.CFrame = CFrame.new(initial_player_position)
+			pcall(function() if hrp and hrp.Parent then hrp.CFrame = initial_player_cframe end end)
 		end
 
 		-- TESTE FUNCTION (exemplo de uso)
@@ -234,7 +282,7 @@ task.spawn(function()
 		end
 
 		-- TELETRANSPORTAR BANANA PARA O JOGADOR
-		if Functions.BringBanana then
+		if Functions.BringBanana and hrp then
 			local banana = workspace:FindFirstChild("Dropper_Drop", true)
 						or workspace:FindFirstChild("BananaDrop", true)
 						or workspace:FindFirstChild("BananaModel", true)
@@ -254,6 +302,17 @@ task.spawn(function()
 						rootPart.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
 					end)
 				end
+			end
+		end
+
+		-- FOLLOW PLAYER (TP infinito pelo nick)
+		if Functions.FollowPlayer and FollowTargetName ~= "" and hrp then
+			local targetHRP = getPlayerHRPByName(FollowTargetName)
+			if targetHRP and targetHRP.Parent then
+				pcall(function()
+					-- posiciona atrás do alvo (3 studs)
+					hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
+				end)
 			end
 		end
 

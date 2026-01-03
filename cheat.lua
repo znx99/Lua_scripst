@@ -24,13 +24,15 @@ local Functions = {
 	AutoCollect = false,
 	AutoDeposit = false,
 	TesteFunction = false,
-    AutoBuy = false,
-    AutoUpgrade = false,
+	AutoBuy = false,
+	AutoUpgrade = false,
 	BringBanana = false,
-	FollowPlayer = false
+	FollowPlayer = false,
+	BugPlayer = false
 }
 
 local FollowTargetName = "" -- nick a ser seguido
+local BugTargetName = "" -- nick a ser bugado
 
 -- Ordem fixa dos botões (para layout consistente)
 local functionOrder = {
@@ -40,7 +42,8 @@ local functionOrder = {
 	"AutoBuy",
 	"AutoUpgrade",
 	"BringBanana",
-	"FollowPlayer"
+	"FollowPlayer",
+	"BugPlayer"
 }
 
 --------------------------------------------------
@@ -52,7 +55,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(420, 360) -- aumentei a altura para caber o input
+frame.Size = UDim2.fromOffset(420, 420) -- aumentei a altura para caber os inputs
 frame.Position = UDim2.fromScale(0.35, 0.3)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
@@ -94,6 +97,30 @@ nameBox.FocusLost:Connect(function(enterPressed)
 end)
 
 --------------------------------------------------
+-- INPUT NICK (para BugPlayer)
+--------------------------------------------------
+local bugBox = Instance.new("TextBox")
+bugBox.Size = UDim2.new(0.9, 0, 0, 28)
+bugBox.Position = UDim2.new(0.05, 0, 0, 70)
+bugBox.PlaceholderText = "Nick do player para bugar"
+bugBox.Text = ""
+bugBox.ClearTextOnFocus = false
+bugBox.Font = Enum.Font.Gotham
+bugBox.TextSize = 12
+bugBox.TextColor3 = Color3.new(1,1,1)
+bugBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
+bugBox.Parent = frame
+Instance.new("UICorner", bugBox).CornerRadius = UDim.new(0,6)
+
+bugBox.FocusLost:Connect(function(enterPressed)
+	if bugBox.Text and bugBox.Text ~= "" then
+		BugTargetName = bugBox.Text
+	else
+		BugTargetName = ""
+	end
+end)
+
+--------------------------------------------------
 -- BOTÕES (3 COLUNAS)
 --------------------------------------------------
 local columns = 3
@@ -101,7 +128,7 @@ local btnWidth = 0.28 -- escala X
 local btnHeight = 28   -- pixels Y
 local paddingX = 0.05  -- escala X
 local paddingY = 8     -- pixels Y
-local startY = 75      -- offset Y em pixels (abaixo do input)
+local startY = 110     -- offset Y em pixels (abaixo dos inputs)
 
 for i, name in ipairs(functionOrder) do
 	local index = i - 1
@@ -312,6 +339,17 @@ task.spawn(function()
 				pcall(function()
 					-- posiciona atrás do alvo (3 studs)
 					hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
+				end)
+			end
+		end
+
+		-- BUG PLAYER (teleporta o player alvo pra você infinitamente)
+		if Functions.BugPlayer and BugTargetName ~= "" and hrp then
+			local targetHRP = getPlayerHRPByName(BugTargetName)
+			if targetHRP and targetHRP.Parent then
+				pcall(function()
+					-- cola o player em você (ligeiramente na frente)
+					targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -2)
 				end)
 			end
 		end

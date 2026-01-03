@@ -185,21 +185,18 @@ task.spawn(function()
 		-- AUTO BUY (tempo baseado no contador)
 		if Functions.AutoBuy and time_to_buy >= 10 then
 			time_to_buy = 0
-
-			-- garante referência atualizada do personagem e do HRP
-			local char = player.Character or player.CharacterAdded:Wait()
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if not hrp then
-				-- se não existir HRP agora, pula esse ciclo
-				task.wait(0.1)
-			else
-				local buy_button = workspace:FindFirstChild("BuyDropper5", true)
-				if buy_button then
-					local buy_button_glow = buy_button:FindFirstChild("Glow", true)
-					if buy_button_glow and buy_button_glow:IsA("BasePart") then
-						local target_pos = buy_button_glow.Position + Vector3.new(0, 5, 0)
-						teleportAndReturn(hrp, target_pos, 0.6)
-					end
+			local hrp = char:WaitForChild("HumanoidRootPart")
+			local initial_player_position = hrp.Position
+			local buy_button = workspace:FindFirstChild("BuyDropper5", true)
+			if buy_button then
+				local buy_button_glow = buy_button:FindFirstChild("Glow", true)
+				if buy_button_glow and buy_button_glow:IsA("BasePart") then
+					local buy_button_path = buy_button_glow.Position + Vector3.new(0, 5, 0)
+					pcall(function()
+						hrp.CFrame = CFrame.new(buy_button_path)
+					end)
+					task.wait(0.6)
+					hrp.CFrame = CFrame.new(initial_player_position)
 				end
 			end
 		end

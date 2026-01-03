@@ -113,7 +113,6 @@ UIS.InputBegan:Connect(function(input, gp)
 			Functions[k] = false
 		end
 
-		warn("SCRIPT PARADO PELO INSERT")
 	end
 
 	-- 0 = ABRE / FECHA UI

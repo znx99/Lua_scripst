@@ -22,9 +22,9 @@ local UI_OPEN = true
 local Functions = {
 	AutoCollect = false,
 	AutoDeposit = false,
-	TesteFunction = false,
     AutoBuy = false,
-    AutoUpgrade = false
+    AutoUpgrade = false,
+	Delay =false
 }
 
 --------------------------------------------------
@@ -176,7 +176,9 @@ task.spawn(function()
             local StarterGui = game:GetService("StarterGui")
             print(StarterGui.MainUI.RightAds.Visible)
         end
-
+		if Functions.Delay then
+			task.wait(1)
+		end
 		task.wait(0.1)
 	end
 end)

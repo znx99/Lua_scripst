@@ -135,20 +135,20 @@ task.spawn(function()
 			task.wait(1)
 			continue
 		end
-
+		if Functions.AutoDeposit then
+			colects = colects + 1
+		end
+		if Functions.AutoBuy then
+			time_to_buy = time_to_buy + 1
+		end
+		if Functions.AutoUpgrade then
+			time_to_upgrade = time_to_upgrade + 1
+		end
 		-- EXEMPLO
 		if Functions.AutoCollect then
 			local part = workspace:FindFirstChild("Dropper_Drop", true)
 			if part then
-                if Functions.AutoDeposit then
-                    colects = colects + 1
-                end
-                if Functions.AutoBuy then
-                    time_to_buy = time_to_buy + 1
-                end
-                if Functions.AutoUpgrade then
-                    time_to_upgrade = time_to_upgrade + 1
-                end
+                
 				hrp.CFrame = CFrame.new(part.Position)
 			end
 		end

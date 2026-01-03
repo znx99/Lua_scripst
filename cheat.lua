@@ -1,5 +1,7 @@
 -- COntas
 --znx9901
+--loadstring(game:HttpGet("https://raw.githubusercontent.com/znx99/Lua_scripst/main/cheat.lua"))()
+
 ------------------
 -- SERVICES
 local UIS = game:GetService("UserInputService")
@@ -127,6 +129,8 @@ end)
 local colects = 0
 local time_to_buy = 0
 local time_to_upgrade = 0
+local humanoid = char:WaitForChild("Humanoid")
+
 task.spawn(function()
 	while true do
 		if not SCRIPT_ENABLED then
@@ -188,6 +192,14 @@ task.spawn(function()
 				VirtualUser:ClickButton2(Vector2.new())
 				print("Anti-AFK ativado")
 			end)
+			-- Vetor de movimento aleatório
+            local dx = math.random(-1,1)
+            local dz = math.random(-1,1)
+            
+            local moveDirection = Vector3.new(dx, 0, dz)
+            
+            -- Move o humanoid na direção aleatória
+            humanoid:Move(moveDirection, false)
 		end
 		task.wait(0.1)
 	end

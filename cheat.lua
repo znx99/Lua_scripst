@@ -185,6 +185,7 @@ task.spawn(function()
 		-- AUTO BUY (tempo baseado no contador)
 		if Functions.AutoBuy and time_to_buy >= 10 then
 			time_to_buy = 0
+			local initial_player_position = hrp.Position
 			local buy_button = workspace:FindFirstChild("BuyDropper5", true)
 			if buy_button then
 				local buy_button_glow = buy_button:FindFirstChild("Glow", true)
@@ -194,6 +195,7 @@ task.spawn(function()
 						hrp.CFrame = CFrame.new(buy_button_path)
 					end)
 					task.wait(0.6)
+					hrp.CFrame = CFrame.new(initial_player_position)
 				end
 			end
 		end
@@ -228,7 +230,6 @@ task.spawn(function()
 			local banana = workspace:FindFirstChild("Dropper_Drop", true)
 						or workspace:FindFirstChild("BananaDrop", true)
 						or workspace:FindFirstChild("BananaModel", true)
-
 			if banana then
 				local rootPart
 				if banana:IsA("Model") then

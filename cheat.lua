@@ -24,10 +24,10 @@ local UI_OPEN = true
 local Functions = {
 	AutoCollect = false,
 	AutoDeposit = false,
+	TesteFunction = false,
     AutoBuy = false,
     AutoUpgrade = false,
-	Delay =false,
-	AntiAfk = false
+	BringBanana = false
 }
 
 --------------------------------------------------
@@ -129,8 +129,6 @@ end)
 local colects = 0
 local time_to_buy = 0
 local time_to_upgrade = 0
-
-
 task.spawn(function()
 	while true do
 		if not SCRIPT_ENABLED then
@@ -181,18 +179,30 @@ task.spawn(function()
             local StarterGui = game:GetService("StarterGui")
             print(StarterGui.MainUI.RightAds.Visible)
         end
-		if Functions.Delay then
-			task.wait(1)
-		end
-		if Functions.AntiAFK then
-			local VirtualUser = game:GetService("VirtualUser")
+		-- TELETRANSPORTAR BANANA PARA O JOGADOR
+		if Functions.BringBanana then
+			-- procura o objeto da banana no workspace
+			local banana = workspace:FindFirstChild("Dropper_Drop", true)
+						or workspace:FindFirstChild("BananaDrop", true)
+						or workspace:FindFirstChild("BananaModel", true)
 
-			player.Idled:Connect(function()
-				VirtualUser:CaptureController()
-				VirtualUser:ClickButton2(Vector2.new())
-				print("Anti-AFK ativado")
-			end)
+			if banana then
+				local rootPart
+				if banana:IsA("Model") then
+					rootPart = banana.PrimaryPart or banana:FindFirstChildWhichIsA("BasePart")
+				elseif banana:IsA("BasePart") then
+					rootPart = banana
+				else
+					rootPart = banana:FindFirstChildWhichIsA("BasePart")
+				end
+
+				if rootPart then
+					-- seta a posição da banana um pouco acima do jogador
+					rootPart.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
+				end
+			end
 		end
+
 		task.wait(0.1)
 	end
 end)

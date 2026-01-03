@@ -185,6 +185,7 @@ task.spawn(function()
 		-- AUTO BUY (tempo baseado no contador)
 		if Functions.AutoBuy and time_to_buy >= 10 then
 			time_to_buy = 0
+			local hrp = char:WaitForChild("HumanoidRootPart")
 			local initial_player_position = hrp.Position
 			local buy_button = workspace:FindFirstChild("BuyDropper5", true)
 			if buy_button then

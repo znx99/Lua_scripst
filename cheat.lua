@@ -170,7 +170,7 @@ task.spawn(function()
 		end
 
 		-- AUTO DEPOSIT (quando colects == 5)
-		if Functions.AutoDeposit and colects >= 50 then
+		if Functions.AutoDeposit and colects >= 1500 then
 			local hrp = char:WaitForChild("HumanoidRootPart")
 			local initial_player_position = hrp.Position
 			colects = 0
@@ -187,7 +187,7 @@ task.spawn(function()
 		end
 
 		-- AUTO BUY (tempo baseado no contador)
-		if Functions.AutoBuy and time_to_buy >= 500 then
+		if Functions.AutoBuy and time_to_buy >= 2000 then
 			time_to_buy = 0
 			local hrp = char:WaitForChild("HumanoidRootPart")
 			local initial_player_position = hrp.Position

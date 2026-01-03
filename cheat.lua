@@ -24,7 +24,8 @@ local Functions = {
 	AutoDeposit = false,
     AutoBuy = false,
     AutoUpgrade = false,
-	Delay =false
+	Delay =false,
+	AntiAfk = false
 }
 
 --------------------------------------------------
@@ -178,6 +179,15 @@ task.spawn(function()
         end
 		if Functions.Delay then
 			task.wait(1)
+		end
+		if Functions.AntiAFK then
+			local VirtualUser = game:GetService("VirtualUser")
+
+			player.Idled:Connect(function()
+				VirtualUser:CaptureController()
+				VirtualUser:ClickButton2(Vector2.new())
+				print("Anti-AFK ativado")
+			end)
 		end
 		task.wait(0.1)
 	end

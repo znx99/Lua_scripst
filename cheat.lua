@@ -187,7 +187,7 @@ task.spawn(function()
 		end
 
 		-- AUTO BUY (tempo baseado no contador)
-		if Functions.AutoBuy and time_to_buy >= 100 then
+		if Functions.AutoBuy and time_to_buy >= 500 then
 			time_to_buy = 0
 			local hrp = char:WaitForChild("HumanoidRootPart")
 			local initial_player_position = hrp.Position

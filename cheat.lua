@@ -1,11 +1,10 @@
--- znx9901 - Cheat GUI Simples com Anti-AFK
+-- znx9901 - Cheat GUI Simples com Anti-AFK Simples
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/znx99/Lua_scripst/main/cheat.lua"))()
 
 ---------------- SERVICES ----------------
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 ---------------- PLAYER ----------------
 local player = Players.LocalPlayer
@@ -40,12 +39,6 @@ local Functions = {
 local FollowTargetName = ""
 local BugTargetName = ""
 
--- Variáveis para Anti-AFK
-local antiAFKDirection = 1 -- 1 = frente, -1 = trás
-local antiAFKTimer = 0
-local antiAFKChangeTime = 5 -- muda direção a cada 5 segundos
-local antiAFKSpeed = 16 -- velocidade normal de caminhada
-
 ---------------- GUI SIMPLES ----------------
 local gui = Instance.new("ScreenGui")
 gui.Name = "Znx99Cheat"
@@ -54,7 +47,7 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 local main = Instance.new("Frame")
 main.Name = "MainFrame"
-main.Size = UDim2.fromOffset(400, 330) -- Aumentei para caber mais botão
+main.Size = UDim2.fromOffset(400, 330)
 main.Position = UDim2.fromScale(0.3, 0.3)
 main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 main.BorderSizePixel = 0
@@ -185,11 +178,11 @@ local buttonLayout = {
 	{name = "BringBanana", col = 3, row = 2},
 	{name = "FollowPlayer", col = 1, row = 3},
 	{name = "BugPlayer", col = 2, row = 3},
-	{name = "AntiAFK", col = 3, row = 3} -- Novo botão Anti-AFK
+	{name = "AntiAFK", col = 3, row = 3}
 }
 
 local btnWidth = 0.3
-local startY = 0.35 -- 35% da altura da janela
+local startY = 0.35
 local buttons = {}
 
 for _, layout in ipairs(buttonLayout) do
@@ -198,69 +191,58 @@ for _, layout in ipairs(buttonLayout) do
 	buttons[layout.name] = createButton(layout.name, posX, posY, btnWidth)
 end
 
----------------- ANTI-AFK SYSTEM ----------------
+---------------- ANTI-AFK SYSTEM (USANDO MOVETO) ----------------
 local antiAFKConnection
-local lastWalkTime = 0
-local walkPattern = {
-	{key = Enum.KeyCode.W, duration = 2},   -- Frente
-	{key = Enum.KeyCode.A, duration = 1.5}, -- Esquerda
-	{key = Enum.KeyCode.S, duration = 2},   -- Trás
-	{key = Enum.KeyCode.D, duration = 1.5}  -- Direita
-}
-local currentPatternIndex = 1
-local patternTimer = 0
+local antiAFKTargetPosition = hrp.Position
+local antiAFKDirection = 1 -- 1 = frente, -1 = trás
+local antiAFKDistance = 10 -- distância para andar
+local antiAFKChangeTime = 3 -- tempo para mudar direção
 
 local function startAntiAFK()
 	if antiAFKConnection then
 		antiAFKConnection:Disconnect()
 	end
 	
+	print("Anti-AFK ativado! Seu personagem ficará andando em círculos.")
+	
 	antiAFKConnection = RunService.Heartbeat:Connect(function(delta)
-		if not Functions.AntiAFK or not char or not humanoid then
+		if not Functions.AntiAFK or not humanoid or not hrp then
 			return
 		end
 		
-		patternTimer = patternTimer + delta
-		local currentPattern = walkPattern[currentPatternIndex]
+		-- Calcula nova posição para andar
+		local currentPos = hrp.Position
+		local targetPos
 		
-		if patternTimer >= currentPattern.duration then
-			patternTimer = 0
-			currentPatternIndex = currentPatternIndex + 1
-			if currentPatternIndex > #walkPattern then
-				currentPatternIndex = 1
-			end
-			
-			-- Solta todas as teclas antes de começar nova direção
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, nil)
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.A, false, nil)
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.S, false, nil)
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.D, false, nil)
-			task.wait(0.1) -- Pequena pausa
+		-- Alterna entre andar para frente e para trás
+		antiAFKChangeTime = antiAFKChangeTime - delta
+		
+		if antiAFKChangeTime <= 0 then
+			antiAFKDirection = -antiAFKDirection -- inverte direção
+			antiAFKChangeTime = 3 -- reseta timer
 		end
 		
-		-- Pressiona a tecla atual
-		local currentKey = walkPattern[currentPatternIndex].key
-		VirtualInputManager:SendKeyEvent(true, currentKey, false, nil)
-		
-		-- Faz pequenos saltos ocasionais
-		if math.random(1, 50) == 1 then -- 2% de chance a cada frame
-			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, nil)
-			task.wait(0.1)
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, nil)
+		-- Calcula posição alvo baseada na direção atual
+		if antiAFKDirection == 1 then
+			-- Anda para frente (na direção que está olhando)
+			local lookVector = hrp.CFrame.LookVector * antiAFKDistance
+			targetPos = currentPos + lookVector
+		else
+			-- Anda para trás
+			local lookVector = hrp.CFrame.LookVector * -antiAFKDistance
+			targetPos = currentPos + lookVector
 		end
 		
-		-- Vira a câmera levemente para parecer mais natural
-		if math.random(1, 100) == 1 then -- 1% de chance
-			local camera = workspace.CurrentCamera
-			if camera then
-				local currentCF = camera.CFrame
-				local randomAngle = math.rad(math.random(-30, 30))
-				camera.CFrame = currentCF * CFrame.Angles(0, randomAngle, 0)
-			end
+		-- Usa MoveTo para andar até a posição
+		if humanoid and humanoid.Health > 0 then
+			humanoid:MoveTo(targetPos)
+		end
+		
+		-- Rotaciona levemente para parecer mais natural
+		if math.random(1, 100) <= 10 then -- 10% de chance
+			hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(math.random(-45, 45)), 0)
 		end
 	end)
-	
-	print("Anti-AFK ativado! Seu personagem ficará andando automaticamente.")
 end
 
 local function stopAntiAFK()
@@ -268,12 +250,10 @@ local function stopAntiAFK()
 		antiAFKConnection:Disconnect()
 		antiAFKConnection = nil
 		
-		-- Solta todas as teclas
-		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, nil)
-		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.A, false, nil)
-		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.S, false, nil)
-		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.D, false, nil)
-		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, nil)
+		-- Para o movimento
+		if humanoid then
+			humanoid:MoveTo(hrp.Position)
+		end
 		
 		print("Anti-AFK desativado.")
 	end
@@ -484,35 +464,8 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
----------------- ANTI-AFK AUTOMÁTICO (Opcional) ----------------
--- Se quiser que o Anti-AFK seja ativado automaticamente quando ficar AFK
-local lastInputTime = tick()
-
-UIS.InputBegan:Connect(function()
-	lastInputTime = tick()
-end)
-
-task.spawn(function()
-	while true do
-		task.wait(10) -- Verifica a cada 10 segundos
-		
-		if SCRIPT_ENABLED and not Functions.AntiAFK then
-			local timeSinceLastInput = tick() - lastInputTime
-			
-			-- Se não houver input por 2 minutos, ativa Anti-AFK automaticamente
-			if timeSinceLastInput > 120 then
-				Functions.AntiAFK = true
-				buttons["AntiAFK"].Text = "AntiAFK: ON"
-				buttons["AntiAFK"].BackgroundColor3 = Color3.fromRGB(70, 170, 90)
-				startAntiAFK()
-				print("Anti-AFK ativado automaticamente (detectado AFK)")
-			end
-		end
-	end
-end)
-
 print("Znx99 Cheat carregado!")
 print("Insert: Desativa tudo")
 print("0: Mostra/esconde menu")
 print("Clique nos botões para ativar/desativar funções")
-print("Anti-AFK: Faz seu personagem andar automaticamente para evitar kick")
+print("Anti-AFK: Usa MoveTo para andar e evitar kick")

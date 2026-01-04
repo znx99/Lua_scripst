@@ -21,7 +21,8 @@ local UI_OPEN = true
 --------------------------------------------------
 local Functions = {
 	Colect_Carrot = false,
-    Plant_carrot = false
+    Plant_carrot = false,
+    BuyEggs = false
 }
 
 --------------------------------------------------
@@ -177,7 +178,6 @@ local function findCarrot(plot)
 
 	return nil
 end
-
 task.spawn(function()
 	while true do
 		if not SCRIPT_ENABLED then
@@ -202,10 +202,21 @@ task.spawn(function()
             local char = player.Character or player.CharacterAdded:Wait()
             local backpack = player:WaitForChild("Backpack")
 
-            local tool = backpack:FindFirstChild("Carrot Seed")
-            tool.Parent = char
+            local myTool = backpack:FindFirstChild("Carrot Seed [2x]")
+			moveToolToSlot(myTool, 2) -- tenta colocar em slot 1
         end
+        if Functions.BuyEggs then
+            local Players = game:GetService("Players")
+            local player = Players.LocalPlayer
+            local playerGui = player:WaitForChild("PlayerGui")
 
+            -- ajuste o caminho até o botão
+            local button = playerGui:WaitForChild("ShopGui")
+                :WaitForChild("ShowMeTheEggsShop")
+
+            -- clica automaticamente
+            button:Activate()
+        end
 		task.wait(0.25) -- loop leve
 	end
 end)

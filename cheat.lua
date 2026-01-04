@@ -1,10 +1,11 @@
--- znx9901 - Cheat GUI Simples com Anti-AFK Simples
+-- znx9901 - Cheat GUI Simples com Anti-AFK Corrigido
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/znx99/Lua_scripst/main/cheat.lua"))()
 
 ---------------- SERVICES ----------------
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 
 ---------------- PLAYER ----------------
 local player = Players.LocalPlayer
@@ -32,7 +33,7 @@ local Functions = {
 	BringBanana = false,
 	FollowPlayer = false,
 	BugPlayer = false,
-	AntiAFK = false -- Nova função Anti-AFK
+	AntiAFK = false
 }
 
 -- para funções que precisam de nome de player
@@ -138,6 +139,8 @@ clearBtn.MouseButton1Click:Connect(function()
 end)
 
 ---------------- BOTÕES DAS FUNÇÕES (3 COLUNAS) ----------------
+local buttons = {}
+
 local function createButton(name, posX, posY, width)
 	local btn = Instance.new("TextButton")
 	btn.Name = name
@@ -155,6 +158,22 @@ local function createButton(name, posX, posY, width)
 
 	btn.MouseButton1Click:Connect(function()
 		if not SCRIPT_ENABLED then return end
+		
+		-- Lógica especial para AntiAFK para evitar conflito
+		if name == "AntiAFK" then
+			Functions.AntiAFK = not Functions.AntiAFK
+			if Functions.AntiAFK then
+				btn.Text = "AntiAFK: ON"
+				btn.BackgroundColor3 = Color3.fromRGB(70, 170, 90)
+				-- startAntiAFK é chamado aqui indiretamente ou diretamente se preferir
+				-- Mas como o loop principal ou a conexão já cuida disso, apenas mudamos o estado
+			else
+				btn.Text = "AntiAFK: OFF"
+				btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+			end
+			return
+		end
+
 		Functions[name] = not Functions[name]
 		if Functions[name] then
 			btn.Text = name .. ": ON"
@@ -183,7 +202,6 @@ local buttonLayout = {
 
 local btnWidth = 0.3
 local startY = 0.35
-local buttons = {}
 
 for _, layout in ipairs(buttonLayout) do
 	local posX = (layout.col - 1) * 0.33 + 0.02
@@ -191,90 +209,42 @@ for _, layout in ipairs(buttonLayout) do
 	buttons[layout.name] = createButton(layout.name, posX, posY, btnWidth)
 end
 
----------------- ANTI-AFK SYSTEM (USANDO MOVETO) ----------------
-local antiAFKConnection
-local antiAFKTargetPosition = hrp.Position
-local antiAFKDirection = 1 -- 1 = frente, -1 = trás
-local antiAFKDistance = 10 -- distância para andar
-local antiAFKChangeTime = 3 -- tempo para mudar direção
-
-local function startAntiAFK()
-	if antiAFKConnection then
-		antiAFKConnection:Disconnect()
-	end
-	
-	print("Anti-AFK ativado! Seu personagem ficará andando em círculos.")
-	
-	antiAFKConnection = RunService.Heartbeat:Connect(function(delta)
-		if not Functions.AntiAFK or not humanoid or not hrp then
-			return
-		end
-		
-		-- Calcula nova posição para andar
-		local currentPos = hrp.Position
-		local targetPos
-		
-		-- Alterna entre andar para frente e para trás
-		antiAFKChangeTime = antiAFKChangeTime - delta
-		
-		if antiAFKChangeTime <= 0 then
-			antiAFKDirection = -antiAFKDirection -- inverte direção
-			antiAFKChangeTime = 3 -- reseta timer
-		end
-		
-		-- Calcula posição alvo baseada na direção atual
-		if antiAFKDirection == 1 then
-			-- Anda para frente (na direção que está olhando)
-			local lookVector = hrp.CFrame.LookVector * antiAFKDistance
-			targetPos = currentPos + lookVector
-		else
-			-- Anda para trás
-			local lookVector = hrp.CFrame.LookVector * -antiAFKDistance
-			targetPos = currentPos + lookVector
-		end
-		
-		-- Usa MoveTo para andar até a posição
-		if humanoid and humanoid.Health > 0 then
-			humanoid:MoveTo(targetPos)
-		end
-		
-		-- Rotaciona levemente para parecer mais natural
-		if math.random(1, 100) <= 10 then -- 10% de chance
-			hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(math.random(-45, 45)), 0)
-		end
-	end)
-end
-
-local function stopAntiAFK()
-	if antiAFKConnection then
-		antiAFKConnection:Disconnect()
-		antiAFKConnection = nil
-		
-		-- Para o movimento
-		if humanoid then
-			humanoid:MoveTo(hrp.Position)
-		end
-		
-		print("Anti-AFK desativado.")
-	end
-end
-
--- Atualizar função quando AntiAFK é ligado/desligado
-buttons["AntiAFK"].MouseButton1Click:Connect(function()
-	if not SCRIPT_ENABLED then return end
-	
-	Functions.AntiAFK = not Functions.AntiAFK
-	
-	if Functions.AntiAFK then
-		buttons["AntiAFK"].Text = "AntiAFK: ON"
-		buttons["AntiAFK"].BackgroundColor3 = Color3.fromRGB(70, 170, 90)
-		startAntiAFK()
-	else
-		buttons["AntiAFK"].Text = "AntiAFK: OFF"
-		buttons["AntiAFK"].BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		stopAntiAFK()
+---------------- ANTI-AFK SYSTEM (MELHORADO) ----------------
+-- Método 1: VirtualUser (Simula atividade para o servidor)
+player.Idled:Connect(function()
+	if Functions.AntiAFK and SCRIPT_ENABLED then
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new())
+		print("Anti-AFK: Evitou desconexão por ociosidade.")
 	end
 end)
+
+-- Método 2: Movimento Físico (Opcional, mas ajuda a ver que está ativo)
+local antiAFKConnection
+local antiAFKDirection = 1
+local antiAFKDistance = 5
+local antiAFKChangeTime = 2
+
+local function updateAntiAFK(delta)
+	if not Functions.AntiAFK or not SCRIPT_ENABLED or not humanoid or not hrp then
+		return
+	end
+	
+	antiAFKChangeTime = antiAFKChangeTime - delta
+	if antiAFKChangeTime <= 0 then
+		antiAFKDirection = -antiAFKDirection
+		antiAFKChangeTime = 2
+		-- Pequena rotação aleatória
+		hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(math.random(-30, 30)), 0)
+	end
+	
+	local targetPos = hrp.Position + (hrp.CFrame.LookVector * (antiAFKDirection * antiAFKDistance))
+	if humanoid.Health > 0 then
+		humanoid:MoveTo(targetPos)
+	end
+end
+
+RunService.Heartbeat:Connect(updateAntiAFK)
 
 ---------------- HELPERS ----------------
 local function getPlayerHRPByName(playerName)
@@ -283,8 +253,7 @@ local function getPlayerHRPByName(playerName)
 		if plr.Name:lower() == playerName:lower() then
 			local c = plr.Character
 			if c then
-				local p = c:FindFirstChild("HumanoidRootPart")
-				return p
+				return c:FindFirstChild("HumanoidRootPart")
 			end
 		end
 	end
@@ -301,49 +270,39 @@ task.spawn(function()
 	while true do
 		task.wait(0.1)
 		
-		-- Atualiza referência do personagem
-		if not char or not char.Parent then
-			char = player.Character or player.CharacterAdded:Wait()
-			hrp = char:WaitForChild("HumanoidRootPart")
-			humanoid = char:WaitForChild("Humanoid")
-		end
-		
-		if not SCRIPT_ENABLED or not hrp then
-			continue
+		if not SCRIPT_ENABLED then continue end
+
+		-- Atualiza referência do personagem se necessário
+		if not char or not char.Parent or not hrp or not humanoid then
+			char = player.Character
+			if char then
+				hrp = char:FindFirstChild("HumanoidRootPart")
+				humanoid = char:FindFirstChild("Humanoid")
+			end
+			if not hrp then continue end
 		end
 
 		-- Incrementos de contadores
-		if Functions.AutoDeposit then
-			colects = colects + 1
-		end
-		if Functions.AutoBuy then
-			time_to_buy = time_to_buy + 1
-		end
-		if Functions.AutoUpgrade then
-			time_to_upgrade = time_to_upgrade + 1
-		end
+		if Functions.AutoDeposit then colects = colects + 1 end
+		if Functions.AutoBuy then time_to_buy = time_to_buy + 1 end
+		if Functions.AutoUpgrade then time_to_upgrade = time_to_upgrade + 1 end
 
 		-- AUTO COLLECT
 		if Functions.AutoCollect then
 			local part = workspace:FindFirstChild("Dropper_Drop", true)
-			if part then
-				pcall(function()
-					hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0))
-				end)
+			if part and part:IsA("BasePart") then
+				pcall(function() hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0)) end)
 			end
 		end
 
 		-- AUTO DEPOSIT
 		if Functions.AutoDeposit and colects >= 200 then
 			colects = 0
-			local initial_cframe = hrp.CFrame
 			local deposit = workspace:FindFirstChild("DepositButton", true)
 			if deposit then
 				local deposit_glow = deposit:FindFirstChild("Glow", true)
 				if deposit_glow and deposit_glow:IsA("BasePart") then
 					pcall(function() hrp.CFrame = CFrame.new(deposit_glow.Position + Vector3.new(0, 5, 0)) end)
-					task.wait(0.1)
-					pcall(function() hrp.CFrame = initial_cframe end)
 				end
 			end
 		end
@@ -378,30 +337,13 @@ task.spawn(function()
 			end
 		end
 
-		-- TESTE FUNCTION
-		if Functions.TesteFunction then
-			pcall(function()
-				local StarterGui = game:GetService("StarterGui")
-				if StarterGui and StarterGui:FindFirstChild("MainUI") and StarterGui.MainUI:FindFirstChild("RightAds") then
-					print("RightAds.Visible =", StarterGui.MainUI.RightAds.Visible)
-				end
-			end)
-		end
-
 		-- BRING BANANA
 		if Functions.BringBanana then
 			local banana = workspace:FindFirstChild("Dropper_Drop", true) or
 						  workspace:FindFirstChild("BananaDrop", true) or
 						  workspace:FindFirstChild("BananaModel", true)
 			if banana then
-				local rootPart
-				if banana:IsA("Model") then
-					rootPart = banana.PrimaryPart or banana:FindFirstChildWhichIsA("BasePart")
-				elseif banana:IsA("BasePart") then
-					rootPart = banana
-				else
-					rootPart = banana:FindFirstChildWhichIsA("BasePart")
-				end
+				local rootPart = banana:IsA("BasePart") and banana or banana:FindFirstChildWhichIsA("BasePart")
 				if rootPart then
 					pcall(function() rootPart.CFrame = hrp.CFrame + Vector3.new(0, 3, 0) end)
 				end
@@ -412,9 +354,7 @@ task.spawn(function()
 		if Functions.FollowPlayer and FollowTargetName ~= "" then
 			local targetHRP = getPlayerHRPByName(FollowTargetName)
 			if targetHRP and targetHRP.Parent then
-				pcall(function() 
-					hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) 
-				end)
+				pcall(function() hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3) end)
 			end
 		end
 
@@ -422,9 +362,7 @@ task.spawn(function()
 		if Functions.BugPlayer and BugTargetName ~= "" then
 			local targetHRP = getPlayerHRPByName(BugTargetName)
 			if targetHRP and targetHRP.Parent then
-				pcall(function() 
-					targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -2) 
-				end)
+				pcall(function() targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -2) end)
 			end
 		end
 	end
@@ -440,7 +378,6 @@ UIS.InputBegan:Connect(function(input, gp)
 		UI_OPEN = false
 		main.Visible = false
 
-		-- Desliga todas as funções
 		for name in pairs(Functions) do
 			Functions[name] = false
 			if buttons[name] then
@@ -448,10 +385,6 @@ UIS.InputBegan:Connect(function(input, gp)
 				buttons[name].BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 			end
 		end
-		
-		-- Para o Anti-AFK
-		stopAntiAFK()
-		
 		print("Script desativado!")
 	end
 
@@ -464,8 +397,4 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
-print("Znx99 Cheat carregado!")
-print("Insert: Desativa tudo")
-print("0: Mostra/esconde menu")
-print("Clique nos botões para ativar/desativar funções")
-print("Anti-AFK: Usa MoveTo para andar e evitar kick")
+print("Znx99 Cheat Corrigido carregado!")

@@ -1,11 +1,11 @@
--- znx9901 - Cheat GUI Simples com Anti-AFK Corrigido
+-- znx9901 - Cheat GUI Simples com Anti-AFK V2 (WASD)
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/znx99/Lua_scripst/main/cheat.lua"))()
 
 ---------------- SERVICES ----------------
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 ---------------- PLAYER ----------------
 local player = Players.LocalPlayer
@@ -33,7 +33,7 @@ local Functions = {
 	BringBanana = false,
 	FollowPlayer = false,
 	BugPlayer = false,
-	AntiAFK = false
+	AntiAFK = false -- Controlado pelo botão na interface
 }
 
 -- para funções que precisam de nome de player
@@ -61,7 +61,7 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Znx99 Cheat - Insert: DESLIGA | 0: TOGGLE UI"
+title.Text = "Znx99 Cheat - Anti-AFK V2 (WASD)"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 14
@@ -158,22 +158,6 @@ local function createButton(name, posX, posY, width)
 
 	btn.MouseButton1Click:Connect(function()
 		if not SCRIPT_ENABLED then return end
-		
-		-- Lógica especial para AntiAFK para evitar conflito
-		if name == "AntiAFK" then
-			Functions.AntiAFK = not Functions.AntiAFK
-			if Functions.AntiAFK then
-				btn.Text = "AntiAFK: ON"
-				btn.BackgroundColor3 = Color3.fromRGB(70, 170, 90)
-				-- startAntiAFK é chamado aqui indiretamente ou diretamente se preferir
-				-- Mas como o loop principal ou a conexão já cuida disso, apenas mudamos o estado
-			else
-				btn.Text = "AntiAFK: OFF"
-				btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-			end
-			return
-		end
-
 		Functions[name] = not Functions[name]
 		if Functions[name] then
 			btn.Text = name .. ": ON"
@@ -209,42 +193,38 @@ for _, layout in ipairs(buttonLayout) do
 	buttons[layout.name] = createButton(layout.name, posX, posY, btnWidth)
 end
 
----------------- ANTI-AFK SYSTEM (MELHORADO) ----------------
--- Método 1: VirtualUser (Simula atividade para o servidor)
-player.Idled:Connect(function()
-	if Functions.AntiAFK and SCRIPT_ENABLED then
-		VirtualUser:CaptureController()
-		VirtualUser:ClickButton2(Vector2.new())
-		print("Anti-AFK: Evitou desconexão por ociosidade.")
+---------------- ANTI-AFK V2 (LÓGICA INTEGRADA) ----------------
+local afkKeys = {Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D}
+
+task.spawn(function()
+	while true do
+		if Functions.AntiAFK and SCRIPT_ENABLED then
+			local randomKey = afkKeys[math.random(1, #afkKeys)]
+			
+			-- Simula pressionar
+			pcall(function()
+				VirtualInputManager:SendKeyEvent(true, randomKey, false, game)
+				task.wait(math.random(2, 5) / 10)
+				VirtualInputManager:SendKeyEvent(false, randomKey, false, game)
+			end)
+			
+			task.wait(math.random(5, 12)) -- Intervalo entre movimentos
+		else
+			task.wait(1)
+		end
 	end
 end)
 
--- Método 2: Movimento Físico (Opcional, mas ajuda a ver que está ativo)
-local antiAFKConnection
-local antiAFKDirection = 1
-local antiAFKDistance = 5
-local antiAFKChangeTime = 2
-
-local function updateAntiAFK(delta)
-	if not Functions.AntiAFK or not SCRIPT_ENABLED or not humanoid or not hrp then
-		return
+-- Proteção extra contra ociosidade
+player.Idled:Connect(function()
+	if Functions.AntiAFK and SCRIPT_ENABLED then
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+			task.wait(0.1)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+		end)
 	end
-	
-	antiAFKChangeTime = antiAFKChangeTime - delta
-	if antiAFKChangeTime <= 0 then
-		antiAFKDirection = -antiAFKDirection
-		antiAFKChangeTime = 2
-		-- Pequena rotação aleatória
-		hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(math.random(-30, 30)), 0)
-	end
-	
-	local targetPos = hrp.Position + (hrp.CFrame.LookVector * (antiAFKDirection * antiAFKDistance))
-	if humanoid.Health > 0 then
-		humanoid:MoveTo(targetPos)
-	end
-end
-
-RunService.Heartbeat:Connect(updateAntiAFK)
+end)
 
 ---------------- HELPERS ----------------
 local function getPlayerHRPByName(playerName)
@@ -272,7 +252,7 @@ task.spawn(function()
 		
 		if not SCRIPT_ENABLED then continue end
 
-		-- Atualiza referência do personagem se necessário
+		-- Atualiza referência do personagem
 		if not char or not char.Parent or not hrp or not humanoid then
 			char = player.Character
 			if char then
@@ -397,4 +377,4 @@ UIS.InputBegan:Connect(function(input, gp)
 	end
 end)
 
-print("Znx99 Cheat Corrigido carregado!")
+print("Znx99 Cheat Final (Anti-AFK WASD Integrado) Carregado!")
